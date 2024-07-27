@@ -1,18 +1,24 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class MyGrid : MonoBehaviour
 {
-    [SerializeField] GameObject gridSquare;
     public int columns = 7, rows = 7;
-    // public float squareGap = .1f;
-    // public float everySquareOffset = 0;
-
+    public ShapePooling shapePooling;
+    [SerializeField] MyGridSquare gridSquare;
     float cellSize;
-    Vector2 _startPos = new Vector2(0, 0);
-    // Vector2 _offset = new Vector2(0, 0);
-    List<GameObject> _gridSquares = new List<GameObject>();
+    Vector2 _startPos;
+    bool[,] _visited;
+    MyGridSquare[,] _gridSquares;
+    Queue<Tuple<int, int>> _hoveringSquare;
+    int[,] _dx = new int[2, 6] {
+        {0,  1,  0,  -1, -1, -1},
+        {1, 1,  1,  0,  -1, 0}
+    };
+    int[] _dy = new int[6] { -1, 0, 1, 1, 0, -1 };
+    List<Tuple<int, int>> _squaresUnoccupied;
 
     // Start is called before the first frame update
     void Awake()
@@ -23,18 +29,18 @@ public class MyGrid : MonoBehaviour
         _startPos.x = -.9f * cellSize * (columns / 2f - 1) - .9f * cellSize;
         _startPos.y = 1.015f * cellSize * (rows / 2f - 1) + 1.015f * cellSize / 2;
         SpawnGridSquare();
+        _hoveringSquare = new Queue<Tuple<int, int>>();
     }
 
     void SpawnGridSquare()
     {
+        _gridSquares = new MyGridSquare[columns, rows];
         for (int i = 0; i < columns; i++)
         {
             for (int j = 0; j < rows; j++)
             {
                 if (OutOfBounds(i, j)) continue;
-                _gridSquares.Add(Instantiate(gridSquare, transform) as GameObject);
-                // _gridSquares[_gridSquares.Count - 1].transform.SetParent(this.transform);
-                // _gridSquares[_gridSquares.Count - 1].transform.localScale = new Vector3(1, 1, 1);
+                _gridSquares[i, j] = Instantiate(gridSquare, transform);
 
                 var posXOffset = i * cellSize * .9f;
                 var posYOffset = j * cellSize * 1.015f;
@@ -42,21 +48,155 @@ public class MyGrid : MonoBehaviour
                 posYOffset += (rows / 2 - j) * .234f * cellSize;
                 // _gridSquares[_gridSquares.Count - 1].GetComponent<RectTransform>().anchoredPosition 
                 //     = new Vector2(_startPos.x + posXOffset, _startPos.y - posYOffset);
-                _gridSquares[_gridSquares.Count - 1].GetComponent<RectTransform>().localPosition
+                _gridSquares[i, j].GetComponent<RectTransform>().localPosition
                     = new Vector3(_startPos.x + posXOffset, _startPos.y - posYOffset, 0);
-                _gridSquares[_gridSquares.Count - 1].GetComponent<MyGridSquare>().SetDebuggerText(i, j);
+                _gridSquares[i, j].SetIndex(i, j);
             }
         }
     }
 
     // Update is called once per frame
-    void Update()
+    void OnDisable()
     {
+        GameEvents.OnShapeDropped -= CheckIfShapeCanBePlaced;
+        GameEvents.OnHoverGridSquare -= (i, j) => _hoveringSquare.Enqueue(new Tuple<int, int>(i, j));
+        GameEvents.OnUnhoverGridSquare -= () => _hoveringSquare.Dequeue();
+    }
 
+    void OnEnable()
+    {
+        GameEvents.OnShapeDropped += CheckIfShapeCanBePlaced;
+        GameEvents.OnHoverGridSquare += (i, j) => _hoveringSquare.Enqueue(new Tuple<int, int>(i, j));
+        GameEvents.OnUnhoverGridSquare += () => _hoveringSquare.Dequeue();
+        // this.RegisterListener(EventID.OnPlaceShape, (param) => CheckIfShapeCanBePlaced((int) param));
+    }
+
+    void CheckIfShapeCanBePlaced(int shapeSize)
+    {
+        // MyDebug.Log("you has dragged and dropped a shape with size {0}", shapeSize);
+        if (_hoveringSquare.Count == shapeSize)
+        {
+            // Debug.Log("yes you can place down this shape");
+            foreach (var mStartSquare in _hoveringSquare)
+            {
+                // MyDebug.Log("{0} {1}", mStartSquare.Item1, mStartSquare.Item2);
+                _gridSquares[mStartSquare.Item1, mStartSquare.Item2].OccupySquare();
+            }
+            shapePooling.FinishDroppingAboveShape(true);
+
+            //bfs
+            // Debug.Log(_hoveringSquare.Count);
+
+            StartCoroutine(DestroyAdjacentSquares());
+        }
+        else
+        {
+            // Debug.Log("no you can not, pls try again");
+            shapePooling.FinishDroppingAboveShape(false);
+        }
+    }
+
+    IEnumerator DestroyAdjacentSquares()
+    {
+        bool destroyedSomeSquares = true;
+        while (destroyedSomeSquares)
+        {
+            //yield return new WaitForSeconds(1f);
+            destroyedSomeSquares = false;
+            _visited = new bool[columns, rows];
+
+            Tuple<int,int>[] _hoveringSquareArray = _hoveringSquare.ToArray();
+            if(_hoveringSquareArray.Length > 1 && 
+                _gridSquares[_hoveringSquareArray[0].Item1, _hoveringSquareArray[0].Item2].diceType > 
+                _gridSquares[_hoveringSquareArray[1].Item1, _hoveringSquareArray[1].Item2].diceType){
+                    Array.Reverse(_hoveringSquareArray);
+                }
+            if(_hoveringSquareArray.Length > 1 && 
+                _gridSquares[_hoveringSquareArray[0].Item1, _hoveringSquareArray[0].Item2].diceType == 
+                _gridSquares[_hoveringSquareArray[1].Item1, _hoveringSquareArray[1].Item2].diceType
+                && _gridSquares[_hoveringSquareArray[1].Item1, _hoveringSquareArray[1].Item2].isRoot){
+                    Array.Reverse(_hoveringSquareArray);
+                }
+
+            foreach (var mStartSquare in _hoveringSquareArray)
+            {
+                if (!_visited[mStartSquare.Item1, mStartSquare.Item2])
+                {
+                    bfs(mStartSquare.Item1, mStartSquare.Item2,
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType);
+                    if (_squaresUnoccupied.Count > 1)
+                    {
+                        yield return new WaitForSeconds(1f);
+                        destroyedSomeSquares = true;
+                        MyDebug.Log("_squaresUnoccupied: {0}", _squaresUnoccupied.Count);
+                        foreach (var item in _squaresUnoccupied)
+                        {
+                            _gridSquares[item.Item1, item.Item2].UnoccupySquare();
+                        }
+                        _squaresUnoccupied.Clear();
+                        _gridSquares[mStartSquare.Item1, mStartSquare.Item2].SetDiceType(
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType + 1);
+                    }
+                }
+            }
+            if (destroyedSomeSquares)
+            {
+                // yield return new WaitForSeconds(1f);
+                Debug.Log("keep calm, there are more squares need to be destroyed");
+            }
+        }
+        Debug.Log("ok, now there is no square to be destroyed, player can take new turn");
+        shapePooling.GenerateRandomShape();
+        _hoveringSquare.Clear();
+    }
+
+    void bfs(int mStartX, int mStartY, int diceType)
+    {
+        //return true if can destroy some squares, else return false
+        if (diceType == 0) return ;
+        Queue<Tuple<int, int>> q = new Queue<Tuple<int, int>>();
+        q.Enqueue(new Tuple<int, int>(mStartX, mStartY));
+        _visited[mStartX, mStartY] = true;
+        Tuple<int, int> u;
+        int newX, newY;
+        _squaresUnoccupied = new List<Tuple<int, int>>();
+        while (q.Count > 0)
+        {
+            u = q.Dequeue();
+            if (u.Item1 != mStartX || u.Item2 != mStartY)
+            {
+                //if this square is not the start square, then we may (or not) "unoccupy" it
+                //_gridSquares[u.Item1, u.Item2].UnoccupySquare();
+                _squaresUnoccupied.Add(new Tuple<int, int>(u.Item1, u.Item2));
+            }
+            for (int i = 0; i < 6; i++)
+            {
+                newX = u.Item1 + _dx[u.Item2 % 2, i];
+                newY = u.Item2 + _dy[i];
+                if (!OutOfBounds(newX, newY) && !_visited[newX, newY]
+                    && _gridSquares[newX, newY].diceType == diceType)
+                {
+                    _visited[newX, newY] = true;
+                    q.Enqueue(new Tuple<int, int>(newX, newY));
+                }
+            }
+        }
+        // if (_squaresUnoccupied.Count > 1)
+        // {
+        //     MyDebug.Log("_squaresUnoccupied: {0}", _squaresUnoccupied.Count);
+        //     foreach (var item in _squaresUnoccupied)
+        //     {
+        //         _gridSquares[item.Item1, item.Item2].UnoccupySquare();
+        //     }
+        //     _gridSquares[mStartX, mStartY].SetDiceType(_gridSquares[mStartX, mStartY].diceType + 1);
+        //     return true;
+        // }
+        // else return false;
     }
 
     bool OutOfBounds(int x, int y)
     {
+        if (x < 0 || x >= columns || y < 0 || y >= rows) return true;
         int diff = Mathf.Abs(y - rows / 2);
         float limitLeft = diff / 2f - .5f;
         int limitRight = columns - diff / 2;
