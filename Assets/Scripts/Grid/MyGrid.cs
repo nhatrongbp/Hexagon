@@ -8,10 +8,12 @@ public class MyGrid : MonoBehaviour
     public int columns = 7, rows = 7;
     public ShapePooling shapePooling;
     [SerializeField] MyGridSquare gridSquare;
+    [SerializeField] MyGridSquareSoul gridSquareSoul;
     float cellSize;
     Vector2 _startPos;
     bool[,] _visited;
     MyGridSquare[,] _gridSquares;
+    MyGridSquareSoul[,] _gridSquareSouls;
     Queue<Tuple<int, int>> _hoveringSquare;
     int[,] _dx = new int[2, 6] {
         {0,  1,  0,  -1, -1, -1},
@@ -29,6 +31,7 @@ public class MyGrid : MonoBehaviour
         _startPos.x = -.9f * cellSize * (columns / 2f - 1) - .9f * cellSize;
         _startPos.y = 1.015f * cellSize * (rows / 2f - 1) + 1.015f * cellSize / 2;
         SpawnGridSquare();
+        SpawnGridSquareSoul();
         _hoveringSquare = new Queue<Tuple<int, int>>();
     }
 
@@ -51,6 +54,20 @@ public class MyGrid : MonoBehaviour
                 _gridSquares[i, j].GetComponent<RectTransform>().localPosition
                     = new Vector3(_startPos.x + posXOffset, _startPos.y - posYOffset, 0);
                 _gridSquares[i, j].SetIndex(i, j);
+            }
+        }
+    }
+
+    void SpawnGridSquareSoul(){
+        _gridSquareSouls = new MyGridSquareSoul[columns, rows];
+        for (int i = 0; i < columns; i++)
+        {
+            for (int j = 0; j < rows; j++)
+            {
+                if (OutOfBounds(i, j)) continue;
+                _gridSquareSouls[i, j] = Instantiate(gridSquareSoul, transform);
+                _gridSquareSouls[i, j].GetComponent<RectTransform>().localPosition
+                    = _gridSquares[i, j].GetComponent<RectTransform>().localPosition;
             }
         }
     }
@@ -86,8 +103,7 @@ public class MyGrid : MonoBehaviour
 
             //bfs
             // Debug.Log(_hoveringSquare.Count);
-
-            StartCoroutine(DestroyAdjacentSquares());
+            StartCoroutine(UnoccupyAdjacentSquares());
         }
         else
         {
@@ -96,7 +112,7 @@ public class MyGrid : MonoBehaviour
         }
     }
 
-    IEnumerator DestroyAdjacentSquares()
+    IEnumerator UnoccupyAdjacentSquares()
     {
         bool destroyedSomeSquares = true;
         while (destroyedSomeSquares)
@@ -120,24 +136,33 @@ public class MyGrid : MonoBehaviour
 
             foreach (var mStartSquare in _hoveringSquareArray)
             {
-                if (!_visited[mStartSquare.Item1, mStartSquare.Item2])
-                {
+                // if (!_visited[mStartSquare.Item1, mStartSquare.Item2])
+                // {
                     bfs(mStartSquare.Item1, mStartSquare.Item2,
                             _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType);
                     if (_squaresUnoccupied.Count > 1)
                     {
-                        yield return new WaitForSeconds(1f);
+                        yield return new WaitForSeconds(.2f);
                         destroyedSomeSquares = true;
                         MyDebug.Log("_squaresUnoccupied: {0}", _squaresUnoccupied.Count);
                         foreach (var item in _squaresUnoccupied)
                         {
+                            _gridSquareSouls[item.Item1, item.Item2].ActivateSoul(_gridSquares[item.Item1, item.Item2].diceType);
                             _gridSquares[item.Item1, item.Item2].UnoccupySquare();
+
+                            //TODO: start moving the soul to the position [mStartSquare.Item1, mStartSquare.Item2]
+                            _gridSquareSouls[item.Item1, item.Item2].MoveTo(
+                                _gridSquares[mStartSquare.Item1, mStartSquare.Item2].GetComponent<RectTransform>().localPosition);
                         }
                         _squaresUnoccupied.Clear();
+
+                        //TODO: wait the soul complete moving
+                        yield return new WaitForSeconds(.4f);
+
                         _gridSquares[mStartSquare.Item1, mStartSquare.Item2].SetDiceType(
                             _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType + 1);
                     }
-                }
+                // }
             }
             if (destroyedSomeSquares)
             {

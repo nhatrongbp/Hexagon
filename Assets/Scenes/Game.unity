@@ -679,6 +679,7 @@ MonoBehaviour:
   rows: 7
   shapePooling: {fileID: 64724422}
   gridSquare: {fileID: 7574978012933649850, guid: dc1c9d79d72b153418e9e3a21837de81, type: 3}
+  gridSquareSoul: {fileID: 2145370466413438409, guid: b0bdb70a46dbcf6458f63c93ef89365b, type: 3}
 --- !u!1 &527737071
 GameObject:
   m_ObjectHideFlags: 0
