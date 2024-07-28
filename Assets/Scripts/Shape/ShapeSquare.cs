@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,12 +7,21 @@ public enum DiceType{
     DiceZero, DiceOne, DiceTwo, DiceThree,
     DiceFour, DiceFive, DiceSix, DiceSeven, DiceKing
 }
+
+[System.Serializable]
+public struct DiceProbRange
+{
+    public int lo, hi;
+    public float[] prob;
+}
+
 public class ShapeSquare : MonoBehaviour
 {
     public int diceType;
     public Image _image;
     public TMP_Text isRootText;
-    public bool isRoot= false;
+    public bool isRoot = false;
+    public List<DiceProbRange> diceProbRange;
     // Start is called before the first frame update
     void Awake()
     {
@@ -25,17 +35,28 @@ public class ShapeSquare : MonoBehaviour
     }
 
     void OnEnable(){
-        GetRandomDiceType();
+        GetRandomDiceType(SingleScoreManager.instance.score);
     }
 
-    void GetRandomDiceType(){
-        // diceType = Random.Range(1, DiceImagesStore.instance.diceSprites.Count);
-        diceType = Random.Range(1, 4);
+    void GetRandomDiceType(int score){
+        // diceType = Random.Range(1, SpritePooling.instance.diceSprites.Count);
+        // diceType = Random.Range(1, 4);
+        foreach (var item in diceProbRange)
+        {
+            if ((item.lo <= score && score <= item.hi) || item.hi == -1)
+            {
+                //get random shape level (easy, medium, hard)
+                diceType = 0;
+                do diceType = Utils.GetRandomIndexWithCustomProb(item.prob);
+                while(diceType == 0);
+                break;
+            }
+        }
         try
         {
-            //Debug.Log(diceType + " " + DiceImagesStore.instance.diceSprites.Count);
-            _image.sprite = DiceImagesStore.instance.diceSprites[diceType];
-            // Debug.Log(DiceImagesStore.instance.diceSprites[(int) DiceType].name);
+            //Debug.Log(diceType + " " + SpritePooling.instance.diceSprites.Count);
+            _image.sprite = SpritePooling.instance.diceSprites[diceType];
+            // Debug.Log(SpritePooling.instance.diceSprites[(int) DiceType].name);
             transform.parent.GetComponent<Shape>().SetRootValueForShapeSquaresInChildren();
         }
         catch (System.Exception)

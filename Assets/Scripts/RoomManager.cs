@@ -5,6 +5,7 @@ using Photon.Pun;
 using TMPro;
 using Photon.Realtime;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class RoomManager : MonoBehaviourPunCallbacks
 {
@@ -31,9 +32,12 @@ public class RoomManager : MonoBehaviourPunCallbacks
     void Start()
     {
         CloseAllScreens();
-        loadingScreen.SetActive(true);
-        loadingText.text = "Connecting to network...";
-        PhotonNetwork.ConnectUsingSettings();
+        if(!PhotonNetwork.IsConnected){
+            loadingScreen.SetActive(true);
+            loadingText.text = "Connecting to network...";
+            PhotonNetwork.ConnectUsingSettings();
+        }
+        else OnJoinedLobby();
     }
 
     // Update is called once per frame
@@ -306,6 +310,11 @@ public class RoomManager : MonoBehaviourPunCallbacks
     #endregion
 
     public void StartGame(){
-        PhotonNetwork.LoadLevel("Game");
+        PhotonNetwork.LoadLevel("Multiplayer");
+    }
+
+    public void BackToMenu(string str){
+        //PhotonNetwork.Disconnect();
+        SceneManager.LoadScene(str);
     }
 }

@@ -154,14 +154,28 @@ public class MyGrid : MonoBehaviour
                             _gridSquareSouls[item.Item1, item.Item2].MoveTo(
                                 _gridSquares[mStartSquare.Item1, mStartSquare.Item2].GetComponent<RectTransform>().localPosition);
                         }
-                        _squaresUnoccupied.Clear();
+                        //_squaresUnoccupied.Clear();
 
                         //TODO: wait the soul complete moving
-                        yield return new WaitForSeconds(.4f);
+                        yield return new WaitForSeconds(.3f);
+
+                        ParticlePooling.instance.PlayParticle(
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType + 1,
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].GetComponent<RectTransform>().position
+                        );
+
+                        yield return new WaitForSeconds(.1f);
 
                         _gridSquares[mStartSquare.Item1, mStartSquare.Item2].SetDiceType(
                             _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType + 1);
+
+                        SingleScoreManager.instance.AddScore(_squaresUnoccupied.Count * 
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType);
+
+                        _squaresUnoccupied.Clear();
                     }
+
+                    _visited[mStartSquare.Item1, mStartSquare.Item2] = false;
                 // }
             }
             if (destroyedSomeSquares)

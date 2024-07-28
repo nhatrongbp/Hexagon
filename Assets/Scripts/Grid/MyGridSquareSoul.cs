@@ -23,11 +23,11 @@ public class MyGridSquareSoul : MonoBehaviour
 
     public void ActivateSoul(int diceType){
         soul.gameObject.SetActive(true);
-        soul.sprite = DiceImagesStore.instance.diceSprites[diceType];
+        soul.sprite = SpritePooling.instance.diceSprites[diceType];
     }
 
     public void MoveTo(Vector2 target){
-        MyDebug.Log("move to {0} {1}", target.x, target.y);
+        //MyDebug.Log("move to {0} {1}", target.x, target.y);
         GetComponent<RectTransform>().DOLocalMove(target, .4f, false).SetUpdate(true).OnComplete(() => 
         {
             soul.gameObject.SetActive(false);

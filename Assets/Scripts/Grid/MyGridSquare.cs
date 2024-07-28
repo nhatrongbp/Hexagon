@@ -53,9 +53,9 @@ public class MyGridSquare : MonoBehaviour
     }
 
     public void SetDiceType(int newDiceType){
-        if(newDiceType < DiceImagesStore.instance.diceSprites.Count){
+        if(newDiceType < SpritePooling.instance.diceSprites.Count){
             diceType = newDiceType;
-            hoveredImage.sprite = DiceImagesStore.instance.diceSprites[diceType];
+            hoveredImage.sprite = SpritePooling.instance.diceSprites[diceType];
             occupiedImage.sprite = hoveredImage.sprite;
             debuggerText.text = diceType.ToString();
         } else {
