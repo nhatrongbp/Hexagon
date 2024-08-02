@@ -5,10 +5,13 @@ using UnityEngine.EventSystems;
 public class Shape : MonoBehaviour, IDragHandler, IEndDragHandler, IPointerDownHandler, IPointerUpHandler
 {
     public Vector2 offset = new Vector2(0, 700);
+    public int dirID;
+
     RectTransform _tranform;
     Canvas _canvas;
-    public ShapeSquare[] _shapeSquares;
+    ShapeSquare[] _shapeSquares;
     bool _isSwapping;
+
     void Awake(){
         _tranform = GetComponent<RectTransform>();
         _canvas = GetComponentInParent<Canvas>();
@@ -41,7 +44,6 @@ public class Shape : MonoBehaviour, IDragHandler, IEndDragHandler, IPointerDownH
     public void OnEndDrag(PointerEventData eventData)
     {
         GameEvents.OnShapeDropped(_shapeSquares.Length);
-        // this.PostEvent(EventID.OnPlaceShape, _shapeSize);
     }
 
     public void OnPointerDown(PointerEventData eventData)

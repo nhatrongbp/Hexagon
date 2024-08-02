@@ -3,11 +3,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum DiceType{
-    DiceZero, DiceOne, DiceTwo, DiceThree,
-    DiceFour, DiceFive, DiceSix, DiceSeven, DiceKing
-}
-
 [System.Serializable]
 public struct DiceProbRange
 {
@@ -18,10 +13,11 @@ public struct DiceProbRange
 public class ShapeSquare : MonoBehaviour
 {
     public int diceType;
-    public Image _image;
     public TMP_Text isRootText;
     public bool isRoot = false;
     public List<DiceProbRange> diceProbRange;
+    Image _image;
+    
     // Start is called before the first frame update
     void Awake()
     {

@@ -15,11 +15,11 @@ public class MyGrid : MonoBehaviour
     MyGridSquare[,] _gridSquares;
     MyGridSquareSoul[,] _gridSquareSouls;
     Queue<Tuple<int, int>> _hoveringSquare;
-    int[,] _dx = new int[2, 6] {
-        {0,  1,  0,  -1, -1, -1},
-        {1, 1,  1,  0,  -1, 0}
+    int[,] _dx = new int[2, 7] {
+        {0,  1,  0,  -1, -1, -1, 0},
+        {1, 1,  1,  0,  -1, 0, 0}
     };
-    int[] _dy = new int[6] { -1, 0, 1, 1, 0, -1 };
+    int[] _dy = new int[7] { -1, 0, 1, 1, 0, -1,0 };
     List<Tuple<int, int>> _squaresUnoccupied;
 
     // Start is called before the first frame update
@@ -115,6 +115,9 @@ public class MyGrid : MonoBehaviour
     IEnumerator UnoccupyAdjacentSquares()
     {
         bool destroyedSomeSquares = true;
+        int squaresUnoccupiedCount = 0; //praise if player unoccupied from 3 to 11 squares in a row
+        int multiplier = 1;
+        int scoresEarned = 0;
         while (destroyedSomeSquares)
         {
             //yield return new WaitForSeconds(1f);
@@ -142,6 +145,7 @@ public class MyGrid : MonoBehaviour
                             _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType);
                     if (_squaresUnoccupied.Count > 1)
                     {
+                        squaresUnoccupiedCount += _squaresUnoccupied.Count;
                         yield return new WaitForSeconds(.2f);
                         destroyedSomeSquares = true;
                         MyDebug.Log("_squaresUnoccupied: {0}", _squaresUnoccupied.Count);
@@ -161,7 +165,9 @@ public class MyGrid : MonoBehaviour
 
                         ParticlePooling.instance.PlayParticle(
                             _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType + 1,
-                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].GetComponent<RectTransform>().position
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].GetComponent<RectTransform>().position,
+                            _squaresUnoccupied.Count * 
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType * multiplier
                         );
 
                         yield return new WaitForSeconds(.1f);
@@ -170,9 +176,16 @@ public class MyGrid : MonoBehaviour
                             _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType + 1);
 
                         SingleScoreManager.instance.AddScore(_squaresUnoccupied.Count * 
-                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType);
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType* multiplier);
+                        scoresEarned += _squaresUnoccupied.Count * 
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType* multiplier;
 
                         _squaresUnoccupied.Clear();
+
+                        ++multiplier;
+
+                        //we bfs above point again because it can possibly be lower than next point
+                        break;
                     }
 
                     _visited[mStartSquare.Item1, mStartSquare.Item2] = false;
@@ -183,6 +196,11 @@ public class MyGrid : MonoBehaviour
                 // yield return new WaitForSeconds(1f);
                 Debug.Log("keep calm, there are more squares need to be destroyed");
             }
+        }
+        
+        if(squaresUnoccupiedCount > 2){
+            ParticlePooling.instance.PlayPraise(
+                squaresUnoccupiedCount+multiplier-1+scoresEarned/16);
         }
         Debug.Log("ok, now there is no square to be destroyed, player can take new turn");
         shapePooling.GenerateRandomShape();
@@ -220,17 +238,21 @@ public class MyGrid : MonoBehaviour
                 }
             }
         }
-        // if (_squaresUnoccupied.Count > 1)
-        // {
-        //     MyDebug.Log("_squaresUnoccupied: {0}", _squaresUnoccupied.Count);
-        //     foreach (var item in _squaresUnoccupied)
-        //     {
-        //         _gridSquares[item.Item1, item.Item2].UnoccupySquare();
-        //     }
-        //     _gridSquares[mStartX, mStartY].SetDiceType(_gridSquares[mStartX, mStartY].diceType + 1);
-        //     return true;
-        // }
-        // else return false;
+    }
+
+    public bool IsGameOver(int dirID){
+        for (int i = 0; i < columns; i++)
+        {
+            for (int j = 0; j < rows; j++)
+            {
+                if(!OutOfBounds(i, j) && !OutOfBounds(i + _dx[j % 2, dirID], j + _dy[dirID])
+                    && !_gridSquares[i, j].occupied 
+                    && !_gridSquares[i + _dx[j % 2, dirID], j + _dy[dirID]].occupied){
+                        return false;
+                }
+            }
+        }
+        return true;
     }
 
     bool OutOfBounds(int x, int y)

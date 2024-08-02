@@ -9,11 +9,9 @@ public class MyGridSquare : MonoBehaviour
     public TMP_Text debuggerText;
     public Image hoveredImage, occupiedImage;
     public int diceType;
-    
-    public bool _hovered;              //if we are hovering this square
-    public bool _occupied;             //if this square was occupied
-    public int _i, _j, _lastDiceType;
     public bool isRoot;
+    public bool occupied;      //if this square was occupied
+    int _i, _j, _lastDiceType;
 
     // Start is called before the first frame update
     void Start()
@@ -29,7 +27,7 @@ public class MyGridSquare : MonoBehaviour
 
     public void UnoccupySquare(){
         diceType = 0;
-        _hovered = false; _occupied = false;
+        occupied = false;
         hoveredImage.gameObject.SetActive(false);
         occupiedImage.gameObject.SetActive(false);
         debuggerText.text = diceType.ToString();
@@ -43,7 +41,7 @@ public class MyGridSquare : MonoBehaviour
         occupiedImage.sprite = hoveredImage.sprite;
         hoveredImage.gameObject.SetActive(false);
         occupiedImage.gameObject.SetActive(true);
-        _hovered = true; _occupied = true;
+        occupied = true;
     }
 
     public void SetIndex(int i, int j){
@@ -60,12 +58,12 @@ public class MyGridSquare : MonoBehaviour
             debuggerText.text = diceType.ToString();
         } else {
             UnoccupySquare();
+            ParticlePooling.instance.PlayPraise(0);
         }
     }
 
     void OnTriggerEnter2D(Collider2D collider){
-        if(!_occupied){
-            _hovered = true;
+        if(!occupied){
             SetDiceType(collider.GetComponent<ShapeSquare>().diceType);
             hoveredImage.gameObject.SetActive(true);
             GameEvents.OnHoverGridSquare(_i, _j);
@@ -75,8 +73,7 @@ public class MyGridSquare : MonoBehaviour
     }
 
     void OnTriggerExit2D(Collider2D collider){
-        if(!_occupied){
-            _hovered = false;
+        if(!occupied){
             _lastDiceType = diceType;
             diceType = 0;
             hoveredImage.gameObject.SetActive(false);
