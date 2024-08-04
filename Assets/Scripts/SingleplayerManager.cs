@@ -1,3 +1,4 @@
+using System.Collections;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -19,6 +20,9 @@ public class SingleplayerManager : MonoBehaviour
         pauseScreen.SetActive(false);
         gameOverScreen.SetActive(false);
         //ShowGameOverScreen();
+        //StartCoroutine(BestScoreEffect());
+        // newBestScoreText.transform.DOShakePosition(1f, new Vector3(8f,0,0), 10, 0).SetEase(Ease.Linear).SetLoops(-1);
+        // bestScoreText.transform.DOShakePosition(1.5f, new Vector3(8f,0,0), 10, 0).SetEase(Ease.Linear).SetLoops(-1);
     }
 
     // Update is called once per frame
@@ -37,11 +41,24 @@ public class SingleplayerManager : MonoBehaviour
         gameOverPanel.DOScale(Vector2.one, .7f).SetEase(Ease.InOutSine);
         if(SingleScoreManager.instance.UpdateBestScore()){
             newBestScoreText.text = "new best score!";
+            newBestScoreText.GetComponent<RectTransform>().DOShapeCircle(Vector2.zero, 2f, 2f);
+            StartCoroutine(BestScoreEffect());
         }
         else {
             newBestScoreText.text = "your score";
         }
         bestScoreText.text = SingleScoreManager.instance.score.ToString();
+    }
+
+    IEnumerator BestScoreEffect(){
+        while (true)
+        {
+            newBestScoreText.transform.DOScale(1.25f, 1f).OnComplete(() => {
+                newBestScoreText.transform.DOScale(1f, 1f);
+            });
+            yield return new WaitForSeconds(2f);
+        }
+        
     }
 
     public void LoadScene(string str){

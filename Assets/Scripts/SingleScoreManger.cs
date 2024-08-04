@@ -8,6 +8,9 @@ public class SingleScoreManager : MonoBehaviour
     public static SingleScoreManager instance;
     public TMP_Text scoreText, bestScoreText;
     public int score, bestScore;
+    public float duration = .5f;
+    int countFPS = 30;
+    Coroutine _countingCO;
     // Start is called before the first frame update
     void Awake()
     {
@@ -20,6 +23,7 @@ public class SingleScoreManager : MonoBehaviour
     }
 
     void Start(){
+        // PlayerPrefs.SetInt("bestScore", 69);
         // score = 0;
         scoreText.text = "0";
         if(PlayerPrefs.HasKey("bestScore")) bestScore = PlayerPrefs.GetInt("bestScore");
@@ -35,6 +39,38 @@ public class SingleScoreManager : MonoBehaviour
 
     public void AddScore(int i){
         score += i;
+        if(_countingCO != null) {
+            StopCoroutine(_countingCO);
+            scoreText.text = (score-i).ToString();
+        }
+        _countingCO = StartCoroutine(CountTo(score - i, score));
+        //scoreText.text = score.ToString();
+        MyDebug.Log("add {0}, score: {1}", i, score);
+    }
+
+    IEnumerator CountTo(int prevVal, int newVal){
+        WaitForSeconds wait = new WaitForSeconds(1f/countFPS);
+        int stepAmount;
+        if(newVal - prevVal < 0){
+            stepAmount = Mathf.FloorToInt((newVal - prevVal) / (countFPS * duration));
+        } else {
+            stepAmount = Mathf.CeilToInt((newVal - prevVal) / (countFPS * duration));
+        }
+        if(prevVal < newVal){
+            while(prevVal < newVal){
+                prevVal += stepAmount;
+                if(prevVal > newVal) prevVal = newVal;
+                scoreText.text = prevVal.ToString();
+                yield return wait;
+            }
+        } else{
+            while(prevVal > newVal){
+                prevVal += stepAmount;
+                if(prevVal < newVal) prevVal = newVal;
+                scoreText.text = prevVal.ToString();
+                yield return wait;
+            }
+        }
         scoreText.text = score.ToString();
     }
 

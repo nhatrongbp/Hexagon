@@ -146,6 +146,9 @@ public class MyGrid : MonoBehaviour
                     if (_squaresUnoccupied.Count > 1)
                     {
                         squaresUnoccupiedCount += _squaresUnoccupied.Count;
+                        if(_gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType == 8){
+                            ++squaresUnoccupiedCount;
+                        }
                         yield return new WaitForSeconds(.2f);
                         destroyedSomeSquares = true;
                         MyDebug.Log("_squaresUnoccupied: {0}", _squaresUnoccupied.Count);
@@ -169,16 +172,16 @@ public class MyGrid : MonoBehaviour
                             _squaresUnoccupied.Count * 
                             _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType * multiplier
                         );
+                        SingleScoreManager.instance.AddScore(_squaresUnoccupied.Count * 
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType* multiplier);
+                        scoresEarned += _squaresUnoccupied.Count * 
+                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType* multiplier;
 
                         yield return new WaitForSeconds(.1f);
 
                         _gridSquares[mStartSquare.Item1, mStartSquare.Item2].SetDiceType(
                             _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType + 1);
-
-                        SingleScoreManager.instance.AddScore(_squaresUnoccupied.Count * 
-                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType* multiplier);
-                        scoresEarned += _squaresUnoccupied.Count * 
-                            _gridSquares[mStartSquare.Item1, mStartSquare.Item2].diceType* multiplier;
+                        AudioManager.instance.PlaySound("Merge1");
 
                         _squaresUnoccupied.Clear();
 
@@ -200,7 +203,7 @@ public class MyGrid : MonoBehaviour
         
         if(squaresUnoccupiedCount > 2){
             ParticlePooling.instance.PlayPraise(
-                squaresUnoccupiedCount+multiplier-1+scoresEarned/16);
+                squaresUnoccupiedCount+multiplier-1+scoresEarned/18);
         }
         Debug.Log("ok, now there is no square to be destroyed, player can take new turn");
         shapePooling.GenerateRandomShape();

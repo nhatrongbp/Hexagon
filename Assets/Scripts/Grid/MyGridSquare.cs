@@ -58,7 +58,8 @@ public class MyGridSquare : MonoBehaviour
             debuggerText.text = diceType.ToString();
         } else {
             UnoccupySquare();
-            ParticlePooling.instance.PlayPraise(0);
+            //play a special particle
+            ParticlePooling.instance.PlayConfetti();
         }
     }
 

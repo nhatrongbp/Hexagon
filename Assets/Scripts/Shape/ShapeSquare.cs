@@ -44,7 +44,7 @@ public class ShapeSquare : MonoBehaviour
                 //get random shape level (easy, medium, hard)
                 diceType = 0;
                 do diceType = Utils.GetRandomIndexWithCustomProb(item.prob);
-                while(diceType == 0);
+                while(diceType == 0); //diceType = 8;
                 break;
             }
         }

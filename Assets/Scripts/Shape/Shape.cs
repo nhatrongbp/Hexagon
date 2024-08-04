@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -11,12 +12,14 @@ public class Shape : MonoBehaviour, IDragHandler, IEndDragHandler, IPointerDownH
     Canvas _canvas;
     ShapeSquare[] _shapeSquares;
     bool _isSwapping;
+    bool _canDragAndDrop;
 
     void Awake(){
         _tranform = GetComponent<RectTransform>();
         _canvas = GetComponentInParent<Canvas>();
         _shapeSquares = GetComponentsInChildren<ShapeSquare>();
         _isSwapping = false;
+        _canDragAndDrop = true;
         //ResetPosition();
     }
     public void ResetPosition(){
@@ -28,6 +31,7 @@ public class Shape : MonoBehaviour, IDragHandler, IEndDragHandler, IPointerDownH
 
     public void OnDrag(PointerEventData eventData)
     {
+        if(!_canDragAndDrop) return;
         _isSwapping = false;
         //Debug.Log("ScreenPoint: " + eventData.position.x + " " + eventData.position.y);
         _tranform.anchorMin = new Vector2(0, 0);
@@ -43,21 +47,29 @@ public class Shape : MonoBehaviour, IDragHandler, IEndDragHandler, IPointerDownH
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        if(!_canDragAndDrop) return;
         GameEvents.OnShapeDropped(_shapeSquares.Length);
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        if(!_canDragAndDrop) return;
         _isSwapping = true;
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
+        if(!_canDragAndDrop) return;
         if(_isSwapping && _shapeSquares.Length > 1) {
             Debug.Log("swap shape");
-            Vector2 vector2 = _shapeSquares[0].GetComponent<RectTransform>().localPosition;
-            _shapeSquares[0].GetComponent<RectTransform>().localPosition = _shapeSquares[1].GetComponent<RectTransform>().localPosition;
-            _shapeSquares[1].GetComponent<RectTransform>().localPosition = vector2;
+            // Vector2 vector2 = _shapeSquares[0].GetComponent<RectTransform>().localPosition;
+            // _shapeSquares[0].GetComponent<RectTransform>().localPosition = _shapeSquares[1].GetComponent<RectTransform>().localPosition;
+            // _shapeSquares[1].GetComponent<RectTransform>().localPosition = vector2;
+            _canDragAndDrop = false;
+            Vector2 vector2 = _shapeSquares[0].GetComponent<Transform>().position;
+            _shapeSquares[0].GetComponent<Transform>().DOMove(_shapeSquares[1].GetComponent<Transform>().position, .16f);
+            _shapeSquares[1].GetComponent<Transform>().DOMove(vector2, .16f);
+            Invoke("EnableDragAndDrop", .2f);
 
             Array.Reverse(_shapeSquares);
             // for (int i = 0; i < _shapeSquares.Length; i++)
@@ -65,6 +77,10 @@ public class Shape : MonoBehaviour, IDragHandler, IEndDragHandler, IPointerDownH
             //     _shapeSquares[i].debuggerText.text = i.ToString();
             // }
         }
+    }
+
+    void EnableDragAndDrop(){
+        _canDragAndDrop = true;
     }
 
     public void SetRootValueForShapeSquaresInChildren(){
